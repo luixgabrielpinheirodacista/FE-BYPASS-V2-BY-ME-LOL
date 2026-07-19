@@ -1,0 +1,70 @@
+-- ESP para o Jogo Animal Hospital (Detectar Anomalias)
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
+-- Função para criar a marcação visual ao redor do animal/NPC
+local function criarESP(modelo, cor, statusTexto)
+    -- Evita criar ESP duplicado no mesmo paciente
+    if modelo:FindFirstChild("HighlightESP") then return end
+
+    -- Cria o contorno brilhante (Highlight)
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "HighlightESP"
+    highlight.FillColor = cor
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.FillTransparency = 0.5 -- Deixa meio transparente para conseguir enxergar o bicho
+    highlight.OutlineTransparency = 0
+    highlight.Adornee = modelo
+    highlight.Parent = modelo
+
+    -- Cria o texto flutuante com o Status (Normal ou Anomalia)
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "TextoESP"
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = Vector3.new(0, 3, 0) -- Fica em cima da cabeça do animal
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = statusTexto
+    label.TextColor3 = cor
+    label.TextSize = 18
+    label.Font = Enum.Font.SourceSansBold
+    label.Parent = billboard
+    
+    billboard.Parent = modelo
+end
+
+-- Função principal que escuta e escaneia o mapa à procura dos pacientes
+local function escanearHospital()
+    -- Loop por tudo que está no Workspace do jogo
+    for _, objeto in pairs(Workspace:GetChildren()) do
+        -- Verifica se o objeto é um modelo de paciente/NPC
+        if objeto:IsA("Model") and objeto:FindFirstChildOfClass("Humanoid") then
+            -- Ignora o seu próprio personagem jogador
+            if not Players:GetPlayerFromCharacter(objeto) then
+                
+                local nomeLower = string.lower(objeto.Name)
+                
+                -- Se o nome do modelo ou algum atributo do jogo indicar Anomalia
+                -- (O script checa variações comuns que os criadores usam nos códigos internos do jogo)
+                if string.find(nomeLower, "anomaly") or string.find(nomeLower, "anomalia") or objeto:GetAttribute("IsAnomaly") == true then
+                    -- ANOMALIA DETECTADA -> VERMELHO
+                    criarESP(objeto, Color3.fromRGB(255, 0, 0), "⚠️ ANOMALIA!")
+                else
+                    -- PACIENTE NORMAL -> VERDE
+                    criarESP(objeto, Color3.fromRGB(0, 255, 0), "✅ NORMAL")
+                end
+                
+            end
+        end
+    end
+end
+
+-- Roda o escaneamento a cada 2 segundos para marcar novos pacientes que spawnarem
+print("[SISTEMA] Script de Detecção Ativado com Sucesso!")
+while true do
+    escanearHospital()
+    task.wait(2)
+end
